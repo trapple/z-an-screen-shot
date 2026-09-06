@@ -10,6 +10,7 @@
   "background": {
     "service_worker": "src/background/index.js"
   },
+  "options_page": "src/options/options.html",
   "content_scripts": [
     {
       "matches": [
@@ -20,6 +21,7 @@
         "src/shared/format.js",
         "src/content/player.js",
         "src/content/ui.js",
+        "src/content/stepper.js",
         "src/content/capture.js",
         "src/content/index.js"
       ],

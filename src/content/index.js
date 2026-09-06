@@ -19,6 +19,8 @@
       }
       settings = Object.assign({}, ZSS.defaults, stored);
       ZSS.settings = settings;
+      ZSS.ui.setButtonsEnabled(settings.showButtons);
+      ZSS.ui.updateButtonLabels(settings);
     });
   }
 
@@ -28,6 +30,8 @@
     for (const [key, change] of Object.entries(changes)) {
       settings[key] = change.newValue;
     }
+    ZSS.ui.setButtonsEnabled(settings.showButtons);
+    ZSS.ui.updateButtonLabels(settings);
   });
 
   // 入力欄にフォーカスがあるときはホットキーを奪わない
@@ -49,6 +53,15 @@
     }
   }
 
+  async function doStep(direction) {
+    try {
+      await ZSS.stepper.step(direction);
+    } catch (error) {
+      console.error('[z-an Screenshot] コマ送りに失敗しました:', error);
+      ZSS.ui.showToast(error.message, true);
+    }
+  }
+
   // capture フェーズで受け取り、z-an 側のハンドラより先に判定する
   function onKeyDown(event) {
     if (isTypingTarget(event.target)) return;
@@ -57,8 +70,33 @@
       event.preventDefault();
       event.stopPropagation();
       doCapture();
+      return;
+    }
+
+    // コマ送りは一時停止中のみ。再生中は z-an 本来の 10 秒送りを妨げない
+    if (!ZSS.player.isPaused()) return;
+
+    if (ZSS.format.matchesHotkey(event, settings.stepForwardKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      doStep(1);
+      return;
+    }
+    if (ZSS.format.matchesHotkey(event, settings.stepBackKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      doStep(-1);
     }
   }
+
+  ZSS.ui.mountButtons(
+    {
+      onStepBack: () => doStep(-1),
+      onStepForward: () => doStep(1),
+      onShoot: () => doCapture(),
+    },
+    settings
+  );
 
   document.addEventListener('keydown', onKeyDown, true);
   loadSettings();
