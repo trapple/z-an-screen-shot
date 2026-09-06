@@ -46,9 +46,24 @@ capture: canvas.drawImage + getImageData 成功, maxLuma=255
 
 ### 既知の環境依存メモ
 
-Claude in Chrome (MCP) 経由でページを開くと、ページ埋め込み JSON が 16382 バイト目で
-切断され `JSON.parse` が例外を投げてプレイヤーが初期化されない。通常の Chrome では発生しない。
-本拡張の実装には影響しないが、自動化ツール経由で動作確認する際は注意。
+再生ページを開くと、ページ埋め込み JSON の `JSON.parse` が 16382 バイト目で失敗し、
+jQuery の ready ハンドラ内で `SyntaxError` が出る。
+
+```
+Uncaught SyntaxError: Expected ',' or '}' after property value in JSON at position 16382
+    at HTMLDocument.<anonymous> (…/live/play/6803/4204:2504:34)
+```
+
+これは **通常の Chrome でも発生する z-an 側の問題**であり、動画の再生自体には影響しない
+(この例外が出ている状態でも video は正常に再生され、fps の実測も成功する)。
+本拡張とは無関係なので対処しない。
+
+当初この現象を「Claude in Chrome (MCP) 経由でのみ起きる、拡張のサニタイズによる切断」と
+推測して spec に記載していたが、実機確認により誤りと判明したため訂正した。
+
+ただし MCP 経由でページを開いた場合、この例外に加えて **動画がまったく再生されない**
+(`readyState` が 0 のまま) という別の現象が起きる。原因は未特定。自動化ツール経由での
+動作確認は当てにならないため、手動確認は通常の Chrome ウィンドウで行うこと。
 
 ## 3. スコープ
 

@@ -66,9 +66,12 @@ content script は **isolated world** で動くため、DevTools の Console か
 
 ホットキーやボタンの操作でしか確認しない手順では、この切り替えは不要。
 
-**Claude in Chrome (MCP) 経由では z-an のプレイヤーが初期化されない** (ページ埋め込み
-JSON が 16382 バイト目で切断され `JSON.parse` が失敗する) ため、手動確認は
-**通常の Chrome ウィンドウ**で行うこと。
+**Claude in Chrome (MCP) 経由では z-an の動画が再生されない** (`readyState` が 0 のまま)
+ため、手動確認は **通常の Chrome ウィンドウ**で行うこと。
+
+なお再生ページでは `JSON.parse` が 16382 バイト目で失敗する `SyntaxError` が
+Console に出るが、これは通常の Chrome でも出る z-an 側の問題であり、動画の再生にも
+本拡張の動作にも影響しない。拡張のログと混同しないこと。
 
 ---
 
