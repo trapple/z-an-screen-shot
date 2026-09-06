@@ -126,12 +126,12 @@ ZSS.player = {
 └ #playerArea
   └ .playerParent.horizontal
     └ #player-con.inner-layout                 ← フルスクリーン対象要素
-      ├ .boxLayer.mobileScale        z=999999
+      ├ .boxLayer.mobileScale        z=999999  ← 全面を覆いクリックを受ける
       ├ .questionnaireLayer          z=10
       └ div
         ├ video#video                          ← 撮影対象 (1920x1080)
         ├ canvas.shaka-canvas-container
-        ├ .cover-controls[.paused]             ← 一時停止時に paused が付く / ボタン挿入先
+        ├ .cover-controls[.paused]             ← 一時停止時に paused が付く (クリックで再生/停止)
         │ └ .control-list.absolute-center      588x82
         │   ├ .time-back        71x71          10 秒戻し (既存)
         │   ├ .play-pause       82x82          再生/一時停止 (既存)
@@ -148,7 +148,7 @@ ZSS.player = {
 | 動画 | `#player-con video` | `#video` は id 依存が強いので子孫セレクタで冗長性を持たせる |
 | 一時停止判定 | `video.paused` | DOM クラスではなく video 要素の状態を正とする |
 | 一時停止 UI | `.cover-controls` | 要素の生成・差し替えを MutationObserver で監視 (状態判定には使わない) |
-| ボタン挿入先 | `.cover-controls` | `.control-list` の**兄弟**として独自の行を追加 |
+| ボタン挿入先 | `#player-con` | 直下に append する。`.cover-controls` の中には入れない (後述) |
 | タイトル | `document.title` | `" - Z-aN"` サフィックスを除去 |
 
 ## 6. 機能仕様
@@ -260,8 +260,20 @@ MSE + シークのため、`currentTime` に代入した値と実際に表示さ
       └──────────────────────────────────┘
 ```
 
-- 挿入先は `.cover-controls` で `#player-con` の配下にあるため、**フルスクリーン時も
-  そのまま表示される** (フルスクリーン要素のサブツリー内にあるため)
+- 挿入先は **`#player-con` の直下**。フルスクリーン対象要素そのものなので、
+  フルスクリーン時もそのまま表示される (フルスクリーン要素のサブツリー内にあるため)
+- **`.cover-controls` の中には入れない。** 当初はそこに入れたが、クリックが一切
+  ボタンに届かず一時停止が解除されるだけになった。原因は 2 つある:
+  1. `.boxLayer` が `z-index: 999999` でプレイヤー全面を覆っており、`z-index: auto` の
+     `.cover-controls` 配下に置いたボタンはその下に隠れる。クリックは `.boxLayer` に吸われる
+  2. `.cover-controls` 自身がクリックで再生/一時停止を切り替えるため、その子孫に置くと
+     ボタン操作のたびに再生が再開する
+- したがってバーは `z-index: 1000000` (`.boxLayer` の 999999 より上) を持たせ、
+  `#player-con` 直下に置く
+- バー上のポインタ系イベント (`pointerdown` / `mousedown` / `pointerup` / `mouseup` /
+  `click` / `dblclick`) は capture フェーズで捕まえ、`stopPropagation` と
+  `stopImmediatePropagation` で確実に止める。`click` だけを止めても、z-an 側が
+  `pointerdown` 段階で再生/停止を処理していると間に合わないため
 - 追加する要素・クラスは全て `zss-` プレフィックスを付ける
 - 既存 DOM への操作は **append のみ**。既存要素の属性・スタイル・クラスは書き換えない
 - ボタンバーの表示/非表示は **`video.paused` に連動**させる (`play` / `pause` イベントを
