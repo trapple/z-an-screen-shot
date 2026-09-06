@@ -147,7 +147,7 @@ ZSS.player = {
 |---|---|---|
 | 動画 | `#player-con video` | `#video` は id 依存が強いので子孫セレクタで冗長性を持たせる |
 | 一時停止判定 | `video.paused` | DOM クラスではなく video 要素の状態を正とする |
-| 一時停止 UI | `.cover-controls` | `paused` クラスの付与を MutationObserver で監視 |
+| 一時停止 UI | `.cover-controls` | 要素の生成・差し替えを MutationObserver で監視 (状態判定には使わない) |
 | ボタン挿入先 | `.cover-controls` | `.control-list` の**兄弟**として独自の行を追加 |
 | タイトル | `document.title` | `" - Z-aN"` サフィックスを除去 |
 
@@ -188,10 +188,19 @@ z-an/KAMITSUBAKI FES '26 FIELD OF RESONANCE アーカイブ_03-13-23.456.png
 
 #### 保存の実装方針
 
-content script で作成した blob URL を service worker に渡し、`chrome.downloads.download`
-でサブフォルダ付きの相対パスを指定する。`chrome.downloads` は content script から直接
-呼べないため service worker を経由する必要がある。また MV3 の service worker では
-`URL.createObjectURL` が使えないため、Blob URL の生成は content script 側で行う。
+`chrome.downloads` は content script から直接呼べないため service worker を経由する。
+content script から service worker へは **data URL** (`canvas.toDataURL('image/png')`)
+を渡す。
+
+Blob URL を渡す方式は採用しない。Blob URL は生成元のオリジン
+(`https://www.zan-live.com`) に紐づいており、拡張の service worker はそのオリジンの
+blob ストレージにアクセスできないため、`chrome.downloads.download` が `Invalid URL`
+で失敗する。MV3 の service worker では `URL.createObjectURL` も使えないため、
+service worker 側で Blob を作り直すこともできない。
+
+data URL は base64 で元データの約 1.33 倍になる (1920x1080 の PNG で概ね 3〜7MB) が、
+`chrome.runtime.sendMessage` のペイロード上限には十分収まり、ローカル処理のため
+連写しても実用上の遅延にならない。
 
 保存完了は `chrome.downloads.download` のコールバックで確認し、`downloadId` が
 `undefined` の場合は `chrome.runtime.lastError` を伴うエラーとして扱う。
@@ -255,7 +264,11 @@ MSE + シークのため、`currentTime` に代入した値と実際に表示さ
   そのまま表示される** (フルスクリーン要素のサブツリー内にあるため)
 - 追加する要素・クラスは全て `zss-` プレフィックスを付ける
 - 既存 DOM への操作は **append のみ**。既存要素の属性・スタイル・クラスは書き換えない
-- 表示制御は `.cover-controls` の `paused` クラスを MutationObserver で監視して行う
+- ボタンバーの表示/非表示は **`video.paused` に連動**させる (`play` / `pause` イベントを
+  購読)。z-an 側の `paused` クラスは監視しない。状態判定の根拠を video 要素に一本化し、
+  DOM クラスの命名変更に影響されないようにするため
+- MutationObserver は `.cover-controls` 要素そのものの生成・差し替えを検知して
+  **ボタンを挿し直す**ためだけに使う (状態判定には使わない)
 - スタイルは content script から `<style>` を注入する (CSS ファイルを manifest で
   読み込むと z-an 側のスタイルと衝突しやすいため、`.zss-` 配下に限定したセレクタで書く)
 - ボタンには `title` 属性でホットキーを併記する (例: 「1 コマ送る (→)」)
