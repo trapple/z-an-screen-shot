@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "z-an Screenshot",
+  "version": "0.1.0",
+  "description": "z-an のアーカイブ動画から UI の写り込みなしにフレームを保存する",
+  "permissions": [
+    "downloads",
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.zan-live.com/*"
+      ],
+      "js": [
+        "src/shared/defaults.js",
+        "src/shared/format.js",
+        "src/content/index.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}
