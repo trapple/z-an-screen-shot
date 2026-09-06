@@ -1,0 +1,86 @@
+// 設定の読み書き。保存すると content script が chrome.storage.onChanged で
+// 拾うため、z-an のページをリロードしなくても反映される。
+(function () {
+  'use strict';
+
+  const ZSS = globalThis.ZSS;
+  const HOTKEY_FIELDS = ['captureKey', 'stepForwardKey', 'stepBackKey'];
+  // 修飾キー単独は割り当てさせない
+  const MODIFIER_CODES = [
+    'ShiftLeft',
+    'ShiftRight',
+    'ControlLeft',
+    'ControlRight',
+    'AltLeft',
+    'AltRight',
+    'MetaLeft',
+    'MetaRight',
+  ];
+
+  let settings = Object.assign({}, ZSS.defaults);
+
+  function showStatus(message, isError) {
+    const status = document.getElementById('status');
+    status.textContent = message;
+    status.classList.toggle('zss-error', Boolean(isError));
+  }
+
+  function render() {
+    for (const key of HOTKEY_FIELDS) {
+      document.getElementById(key).value = ZSS.format.formatHotkey(settings[key]);
+    }
+    document.getElementById('downloadSubdir').value = settings.downloadSubdir;
+    document.getElementById('showButtons').checked = Boolean(settings.showButtons);
+  }
+
+  function save() {
+    chrome.storage.sync.set(settings, () => {
+      if (chrome.runtime.lastError) {
+        showStatus(`保存に失敗しました: ${chrome.runtime.lastError.message}`, true);
+        return;
+      }
+      showStatus('保存しました');
+    });
+  }
+
+  function load() {
+    chrome.storage.sync.get(ZSS.defaults, (stored) => {
+      if (chrome.runtime.lastError) {
+        showStatus(`設定の読み込みに失敗しました: ${chrome.runtime.lastError.message}`, true);
+        return;
+      }
+      settings = Object.assign({}, ZSS.defaults, stored);
+      render();
+    });
+  }
+
+  for (const key of HOTKEY_FIELDS) {
+    const input = document.getElementById(key);
+    input.addEventListener('keydown', (event) => {
+      event.preventDefault();
+      if (MODIFIER_CODES.includes(event.code)) return;
+      settings[key] = ZSS.format.hotkeyFromEvent(event);
+      render();
+      save();
+    });
+  }
+
+  document.getElementById('downloadSubdir').addEventListener('change', (event) => {
+    settings.downloadSubdir = event.target.value.trim() || ZSS.defaults.downloadSubdir;
+    render();
+    save();
+  });
+
+  document.getElementById('showButtons').addEventListener('change', (event) => {
+    settings.showButtons = event.target.checked;
+    save();
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    settings = Object.assign({}, ZSS.defaults);
+    render();
+    save();
+  });
+
+  load();
+})();

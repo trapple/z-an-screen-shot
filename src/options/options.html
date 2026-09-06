@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>z-an Screenshot の設定</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    max-width: 560px;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #1c1c1e;
+  }
+  h1 { font-size: 18px; margin: 0 0 20px; }
+  h2 { font-size: 14px; margin: 24px 0 8px; color: #6b6b70; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .row label { width: 140px; flex: none; }
+  input[type="text"] {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #c7c7cc;
+    border-radius: 6px;
+    font: inherit;
+  }
+  input[readonly] { background: #f2f2f7; cursor: pointer; }
+  input[readonly]:focus { border-color: #0a84ff; background: #fff; outline: none; }
+  .hint { margin: 4px 0 0; font-size: 12px; color: #8e8e93; }
+  button {
+    margin-top: 20px;
+    padding: 7px 14px;
+    border: 1px solid #c7c7cc;
+    border-radius: 6px;
+    background: #fff;
+    font: inherit;
+    cursor: pointer;
+  }
+  #status { min-height: 1.7em; margin: 12px 0 0; font-size: 12px; color: #34c759; }
+  #status.zss-error { color: #ff3b30; }
+</style>
+</head>
+<body>
+  <h1>z-an Screenshot の設定</h1>
+
+  <h2>ホットキー</h2>
+  <p class="hint">入力欄をクリックしてから、割り当てたいキーを押してください。修飾キー単独は登録できません。</p>
+  <div class="row">
+    <label for="captureKey">撮影</label>
+    <input id="captureKey" type="text" readonly data-hotkey="captureKey">
+  </div>
+  <div class="row">
+    <label for="stepForwardKey">1 コマ送る</label>
+    <input id="stepForwardKey" type="text" readonly data-hotkey="stepForwardKey">
+  </div>
+  <div class="row">
+    <label for="stepBackKey">1 コマ戻す</label>
+    <input id="stepBackKey" type="text" readonly data-hotkey="stepBackKey">
+  </div>
+  <p class="hint">コマ送りは一時停止中のみ動作します。再生中は z-an 本来の 10 秒送りが働きます。</p>
+
+  <h2>保存</h2>
+  <div class="row">
+    <label for="downloadSubdir">サブフォルダ</label>
+    <input id="downloadSubdir" type="text">
+  </div>
+  <p class="hint">ダウンロードフォルダ内のこのフォルダに保存します。空にすると z-an を使います。</p>
+
+  <h2>表示</h2>
+  <label>
+    <input id="showButtons" type="checkbox">
+    一時停止中にコマ送り・撮影ボタンを表示する
+  </label>
+
+  <button id="reset" type="button">既定値に戻す</button>
+  <p id="status" role="status"></p>
+
+  <script src="../shared/defaults.js"></script>
+  <script src="../shared/format.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
