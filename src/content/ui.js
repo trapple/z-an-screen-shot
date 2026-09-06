@@ -38,7 +38,9 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, calc(-50% + 72px));
-  z-index: 2;
+  /* .boxLayer が z-index 999999 で全面を覆っているため、その上に出す。
+     下にあるとクリックが .boxLayer に吸われて一時停止が解除されるだけになる */
+  z-index: 1000000;
   display: flex;
   gap: 16px;
   align-items: center;
@@ -128,12 +130,27 @@
     return document.querySelector('.zss-bar');
   }
 
+  // z-an は pointerdown 段階で再生/一時停止を切り替えるため、click だけを
+  // 止めても間に合わない。ポインタ系イベントを全て capture フェーズで捕まえ、
+  // バーの外へ一切漏らさない。
+  const SWALLOWED_EVENTS = [
+    'pointerdown',
+    'mousedown',
+    'pointerup',
+    'mouseup',
+    'click',
+    'dblclick',
+  ];
+
+  function swallow(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }
+
   function onBarClick(event) {
     const button = event.target.closest('.zss-btn');
     if (!button || !barHandlers) return;
-    // .cover-controls はクリックで再生/一時停止するため、伝播を必ず止める
-    event.preventDefault();
-    event.stopPropagation();
     const action = button.dataset.zssAction;
     if (action === 'back') barHandlers.onStepBack();
     else if (action === 'forward') barHandlers.onStepForward();
@@ -151,7 +168,16 @@
       button.innerHTML = spec.icon;
       bar.appendChild(button);
     }
-    bar.addEventListener('click', onBarClick);
+    for (const type of SWALLOWED_EVENTS) {
+      bar.addEventListener(
+        type,
+        (event) => {
+          swallow(event);
+          if (type === 'click') onBarClick(event);
+        },
+        true
+      );
+    }
     return bar;
   }
 
@@ -175,10 +201,13 @@
     bar.classList.toggle('zss-hidden', !(visible && barEnabled));
   }
 
-  // .cover-controls は差し替えられることがあるため、無ければ挿し直す
+  // バーは #player-con 直下に置く。.cover-controls の中に入れると
+  // (1) .boxLayer (z-index 999999) の下に隠れてクリックが届かず、
+  // (2) .cover-controls 自身のクリックで再生が再開してしまう。
+  // #player-con はフルスクリーン対象要素そのものなので、全画面でも表示される。
   function attachBar(settings) {
     if (!barEnabled) return;
-    const host = ZSS.player.getControlHost();
+    const host = ZSS.player.getContainer();
     if (!host) return;
     if (host.querySelector(':scope > .zss-bar')) return;
     host.appendChild(buildBar());
