@@ -7,6 +7,9 @@
     "downloads",
     "storage"
   ],
+  "background": {
+    "service_worker": "src/background/index.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -15,6 +18,9 @@
       "js": [
         "src/shared/defaults.js",
         "src/shared/format.js",
+        "src/content/player.js",
+        "src/content/ui.js",
+        "src/content/capture.js",
         "src/content/index.js"
       ],
       "run_at": "document_idle",
