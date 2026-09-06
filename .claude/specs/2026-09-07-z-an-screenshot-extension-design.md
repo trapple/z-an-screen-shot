@@ -295,6 +295,11 @@ MSE + シークのため、`currentTime` に代入した値と実際に表示さ
 - ボタンバーの表示/非表示は **`video.paused` に連動**させる (`play` / `pause` イベントを
   購読)。z-an 側の `paused` クラスは監視しない。状態判定の根拠を video 要素に一本化し、
   DOM クラスの命名変更に影響されないようにするため
+- **バーの表示可否は `showButtons` 設定と `video.paused` の論理積だけで決まる。**
+  設定が OFF のときにバーを DOM から削除する方式は採らない。削除と、MutationObserver に
+  よる再挿入とが競合し、状態が二重管理になって「OFF にしてもバーが出る」という
+  不整合を生むため。バーは常に DOM に置いたままにし、表示は CSS クラスの
+  付け外しに一本化する
 - MutationObserver は `.cover-controls` 要素そのものの生成・差し替えを検知して
   **ボタンを挿し直す**ためだけに使う (状態判定には使わない)
 - スタイルは content script から `<style>` を注入する (CSS ファイルを manifest で

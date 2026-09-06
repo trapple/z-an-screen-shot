@@ -126,8 +126,19 @@
   let barHandlers = null;
   let barEnabled = true;
 
-  function getBar() {
-    return document.querySelector('.zss-bar');
+  // 万一バーが複数できていても取りこぼさないよう全件を対象にする
+  function getBars() {
+    return document.querySelectorAll('.zss-bar');
+  }
+
+  // バーの表示可否は「設定で有効か」と「一時停止中か」の論理積だけで決まる。
+  // 設定 OFF で DOM から削除する方式にすると、MutationObserver による再挿入と
+  // 競合して状態が二重管理になるため、常に DOM に置いたまま CSS で切り替える。
+  function syncBarVisibility() {
+    const visible = barEnabled && ZSS.player.isPaused();
+    for (const bar of getBars()) {
+      bar.classList.toggle('zss-hidden', !visible);
+    }
   }
 
   // z-an は pointerdown 段階で再生/一時停止を切り替えるため、click だけを
@@ -181,38 +192,37 @@
     return bar;
   }
 
+  // ZSS.settings を優先して読む。mountButtons に渡された settings は
+  // 起動時のオブジェクトで、設定変更後は古くなっているため。
   function updateButtonLabels(settings) {
-    const bar = getBar();
-    if (!bar) return;
-    const current = settings || ZSS.settings || {};
-    for (const spec of BUTTON_SPECS) {
-      const button = bar.querySelector(`[data-zss-action="${spec.action}"]`);
-      if (!button) continue;
-      const hotkey = ZSS.format.formatHotkey(current[spec.settingKey]);
-      const text = hotkey ? `${spec.label} (${hotkey})` : spec.label;
-      button.title = text;
-      button.setAttribute('aria-label', text);
+    const current = ZSS.settings || settings || {};
+    for (const bar of getBars()) {
+      for (const spec of BUTTON_SPECS) {
+        const button = bar.querySelector(`[data-zss-action="${spec.action}"]`);
+        if (!button) continue;
+        const hotkey = ZSS.format.formatHotkey(current[spec.settingKey]);
+        const text = hotkey ? `${spec.label} (${hotkey})` : spec.label;
+        button.title = text;
+        button.setAttribute('aria-label', text);
+      }
     }
-  }
-
-  function setButtonsVisible(visible) {
-    const bar = getBar();
-    if (!bar) return;
-    bar.classList.toggle('zss-hidden', !(visible && barEnabled));
   }
 
   // バーは #player-con 直下に置く。.cover-controls の中に入れると
   // (1) .boxLayer (z-index 999999) の下に隠れてクリックが届かず、
   // (2) .cover-controls 自身のクリックで再生が再開してしまう。
   // #player-con はフルスクリーン対象要素そのものなので、全画面でも表示される。
+  //
+  // barEnabled が false でもバーは作る。表示可否は syncBarVisibility に
+  // 一本化されており、ここで作らない判断を混ぜると状態が二重管理になる。
   function attachBar(settings) {
-    if (!barEnabled) return;
     const host = ZSS.player.getContainer();
     if (!host) return;
-    if (host.querySelector(':scope > .zss-bar')) return;
-    host.appendChild(buildBar());
-    updateButtonLabels(settings);
-    setButtonsVisible(ZSS.player.isPaused());
+    if (!host.querySelector(':scope > .zss-bar')) {
+      host.appendChild(buildBar());
+      updateButtonLabels(settings);
+    }
+    syncBarVisibility();
   }
 
   function mountButtons(handlers, settings) {
@@ -220,17 +230,12 @@
     injectStyles();
     attachBar(settings);
     ZSS.player.onControlHostChange(() => attachBar(settings));
-    ZSS.player.onPauseStateChange((paused) => setButtonsVisible(paused));
+    ZSS.player.onPauseStateChange(() => syncBarVisibility());
   }
 
   function setButtonsEnabled(enabled) {
     barEnabled = Boolean(enabled);
-    if (!barEnabled) {
-      const bar = getBar();
-      if (bar) bar.remove();
-      return;
-    }
-    attachBar();
+    syncBarVisibility();
   }
 
   ZSS.ui = {
