@@ -52,6 +52,20 @@ Chrome 拡張の DOM 操作・キー入力・ダウンロードは自動テス�
 `node --test test/` のようにディレクトリを渡す形は、この環境の nodenv shim 経由では
 `Cannot find module .../test` で失敗するため使わない。
 
+### Console から ZSS を触るときの注意
+
+content script は **isolated world** で動くため、DevTools の Console から
+`ZSS.format.buildFilename(...)` のように直接叩くと `ReferenceError: ZSS is not defined`
+になる。Console はデフォルトでページ側 (main world) を評価するため。
+
+各タスクの手動確認で Console から `ZSS.*` を実行する手順は、**すべて実行前に
+コンテキストを切り替える**こと:
+
+> DevTools の Console 上部にある実行コンテキストのセレクタ (通常 `top` と表示されている)
+> をクリックし、**`z-an Screenshot`** を選ぶ。
+
+ホットキーやボタンの操作でしか確認しない手順では、この切り替えは不要。
+
 **Claude in Chrome (MCP) 経由では z-an のプレイヤーが初期化されない** (ページ埋め込み
 JSON が 16382 バイト目で切断され `JSON.parse` が失敗する) ため、手動確認は
 **通常の Chrome ウィンドウ**で行うこと。
