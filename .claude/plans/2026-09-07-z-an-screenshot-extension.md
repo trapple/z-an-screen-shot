@@ -48,6 +48,10 @@ Chrome 拡張の DOM 操作・キー入力・ダウンロードは自動テス�
 手動確認 step には「何を実行し、何が起きれば PASS か」を具体的に書いてあるので、
 その通りに確認してから commit すること。確認せずに次のタスクへ進まない。
 
+自動テストは `node --test` (引数なし) で実行する。cwd 配下の `*.test.js` を自動検出する。
+`node --test test/` のようにディレクトリを渡す形は、この環境の nodenv shim 経由では
+`Cannot find module .../test` で失敗するため使わない。
+
 **Claude in Chrome (MCP) 経由では z-an のプレイヤーが初期化されない** (ページ埋め込み
 JSON が 16382 バイト目で切断され `JSON.parse` が失敗する) ため、手動確認は
 **通常の Chrome ウィンドウ**で行うこと。
@@ -333,7 +337,7 @@ test('hotkeyFromEvent: KeyboardEvent から保存形式に変換する', () => {
 
 - [ ] **Step 2: 実行して失敗を確認**
 
-実行: `node --test test/`
+実行: `node --test`
 
 期待: FAIL (`Cannot find module '../src/shared/format.js'`)
 
@@ -478,7 +482,7 @@ test('hotkeyFromEvent: KeyboardEvent から保存形式に変換する', () => {
 
 - [ ] **Step 4: 実行して通過を確認**
 
-実行: `node --test test/`
+実行: `node --test`
 
 期待: PASS (12 tests, 0 fail)
 
@@ -1983,7 +1987,7 @@ onChanged で拾うため z-an のページをリロードしなくても反映�
 - [ ] **Step 1: 自動テストを実行**
 
 ```bash
-node --test test/
+node --test
 ```
 
 期待: PASS (12 tests, 0 fail)
@@ -2050,7 +2054,7 @@ z-an のページもリロードする。
 純粋関数のテスト:
 
 ```bash
-node --test test/
+node --test
 ```
 
 DOM 操作・キー入力・ダウンロードは自動テストの費用対効果が低いため、
