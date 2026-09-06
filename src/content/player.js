@@ -20,6 +20,16 @@
   // 時刻表示の更新まで拾ってしまうため、プレイヤー領域に限定する
   const OBSERVE_ROOT = '#playerArea';
 
+  // 再生ページの URL パターン (例: /ja/live/play/6803/4204)
+  const PLAY_PAGE_PATH = /\/live\/play\//;
+
+  // 再生ページかどうかを URL で判定する。
+  // DOM の有無で判定すると、トップページと「構造が変わって要素が消えた再生ページ」を
+  // 区別できず、verifySelectors による Fail Fast が意味を失うため。
+  function isPlayPage() {
+    return PLAY_PAGE_PATH.test(location.pathname);
+  }
+
   function getContainer() {
     return document.querySelector(SELECTORS.container);
   }
@@ -77,6 +87,7 @@
 
   ZSS.player = {
     SELECTORS,
+    isPlayPage,
     getContainer,
     getVideo,
     getControlHost,

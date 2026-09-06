@@ -5,6 +5,11 @@
   const ZSS = (globalThis.ZSS = globalThis.ZSS || {});
   ZSS.version = '0.1.0';
 
+  // content script は zan-live.com の全ページに注入されるが、再生ページ以外では
+  // 何もしない。トップページや番組一覧でキー入力を監視する必要はなく、
+  // セレクタ検証の警告を出すのもノイズにしかならない。
+  if (!ZSS.player.isPlayPage()) return;
+
   let settings = Object.assign({}, ZSS.defaults);
   ZSS.settings = settings;
 
