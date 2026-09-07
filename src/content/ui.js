@@ -194,17 +194,28 @@
       button.innerHTML = ICONS[spec.action];
       bar.appendChild(button);
     }
+    return bar;
+  }
+
+  // 握り潰しは document の capture で行う。バー要素に付けると、capture が祖先から
+  // 降りてくる性質上、z-an 側が祖先要素の capture に持っているハンドラに先を越される。
+  // 実際、初回再生前だけ「クリックで再生開始」が祖先で処理されており、バーのボタンを
+  // 押しただけで再生が始まっていた (再生後はそのハンドラが外れるため再現しなくなる)。
+  // バーは 1 つとは限らないので、要素ではなくセレクタで判定する。
+  function swallowBarPointerEvents() {
     for (const type of SWALLOWED_EVENTS) {
-      bar.addEventListener(
+      document.addEventListener(
         type,
         (event) => {
+          const target = event.target;
+          if (!target || typeof target.closest !== 'function') return;
+          if (!target.closest('.zss-bar')) return;
           swallow(event);
           if (type === 'click') onBarClick(event);
         },
         true
       );
     }
-    return bar;
   }
 
   // ZSS.settings を優先して読む。mountButtons に渡された settings は
@@ -259,6 +270,7 @@
     verifyActions(handlers);
     barHandlers = handlers;
     injectStyles();
+    swallowBarPointerEvents();
     attachBar(settings);
     ZSS.player.onControlHostChange(() => attachBar(settings));
     ZSS.player.onPauseStateChange(() => syncBarVisibility());
