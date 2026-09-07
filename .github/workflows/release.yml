@@ -1,0 +1,43 @@
+name: Release
+
+# v0.1.0 のようなタグを push すると、配布用 ZIP を作って Release に添付する。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: テストを実行
+        run: node --test
+
+      - name: タグと manifest.json のバージョンが一致するか確認
+        # 食い違ったまま公開すると、ユーザーが入れた拡張のバージョン表示と
+        # Release のバージョンがずれて更新の判断ができなくなる
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          MANIFEST=$(node -p "require('./manifest.json').version")
+          if [ "$TAG" != "$MANIFEST" ]; then
+            echo "タグ ($TAG) と manifest.json の version ($MANIFEST) が一致しません" >&2
+            exit 1
+          fi
+          echo "バージョン一致: $TAG"
+
+      - name: 配布用 ZIP を作る
+        run: ./scripts/build-zip.sh
+
+      - name: Release を作成して ZIP を添付
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.zip --generate-notes
