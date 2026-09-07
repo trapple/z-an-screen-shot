@@ -60,14 +60,18 @@
     }
   }
 
-  async function doStep(direction) {
+  // 失敗時の扱いはコマ送りも 1 秒送りも同じなので 1 か所にまとめる
+  async function runSeek(seekFn, direction, what) {
     try {
-      await ZSS.stepper.step(direction);
+      await seekFn(direction);
     } catch (error) {
-      console.error('[z-an Screenshot] コマ送りに失敗しました:', error);
+      console.error(`[z-an Screenshot] ${what}に失敗しました:`, error);
       ZSS.ui.showToast(error.message, true);
     }
   }
+
+  const doStep = (direction) => runSeek(ZSS.stepper.step, direction, 'コマ送り');
+  const doSeek = (direction) => runSeek(ZSS.stepper.seek, direction, '1 秒送り');
 
   // capture フェーズで受け取り、z-an 側のハンドラより先に判定する
   function onKeyDown(event) {
@@ -80,27 +84,32 @@
       return;
     }
 
-    // コマ送りは一時停止中のみ。再生中は z-an 本来の 10 秒送りを妨げない
+    // シーク系は一時停止中のみ。再生中は z-an 本来の 10 秒送りを妨げない
     if (!ZSS.player.isPaused()) return;
 
-    if (ZSS.format.matchesHotkey(event, settings.stepForwardKey)) {
+    const seeks = [
+      [settings.stepForwardKey, doStep, 1],
+      [settings.stepBackKey, doStep, -1],
+      [settings.seekForwardKey, doSeek, 1],
+      [settings.seekBackKey, doSeek, -1],
+    ];
+    for (const [hotkey, run, direction] of seeks) {
+      if (!ZSS.format.matchesHotkey(event, hotkey)) continue;
       event.preventDefault();
       event.stopPropagation();
-      doStep(1);
+      run(direction);
       return;
-    }
-    if (ZSS.format.matchesHotkey(event, settings.stepBackKey)) {
-      event.preventDefault();
-      event.stopPropagation();
-      doStep(-1);
     }
   }
 
+  // キーは ui.js の BUTTON_SPECS の action と対応させる
   ZSS.ui.mountButtons(
     {
-      onStepBack: () => doStep(-1),
-      onStepForward: () => doStep(1),
-      onShoot: () => doCapture(),
+      seekBack: () => doSeek(-1),
+      stepBack: () => doStep(-1),
+      shoot: () => doCapture(),
+      stepForward: () => doStep(1),
+      seekForward: () => doSeek(1),
     },
     settings
   );

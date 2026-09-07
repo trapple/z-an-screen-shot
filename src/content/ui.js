@@ -115,20 +115,39 @@
 
   // アイコンはインライン SVG で描く。絵文字はフォント依存でサイズとベースラインが
   // 環境ごとにずれ、既存ボタンと並べたときに揃わないため使わない。
+  // コマ送りは「棒 + 三角」、1 秒送りは「三角 2 つ」で描き分ける。
+  // 粒度の違いが一目で分かるよう、形そのものを変えている。
   const ICONS = {
-    back:
+    seekBack:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 5v14l-9.5-7z"/><path d="M11.5 5v14L2 12z"/></svg>',
+    stepBack:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.2v14H6z"/><path d="M20 5v14L9.2 12z"/></svg>',
     shoot:
       '<svg viewBox="0 0 24 24" aria-hidden="true" fill-rule="evenodd">' +
       '<path d="M20 5h-3.2l-1.4-2H8.6L7.2 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-8 14a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>',
-    forward:
+    stepForward:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.8 5H18v14h-2.2z"/><path d="M4 5v14l10.8-7z"/></svg>',
+    seekForward:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5v14l9.5-7z"/><path d="M12.5 5v14L22 12z"/></svg>',
   };
 
+  // action は mountButtons に渡されるハンドラのキーと対応する
   const BUTTON_SPECS = [
-    { action: 'back', icon: ICONS.back, label: '1 コマ戻す', settingKey: 'stepBackKey' },
+    { action: 'seekBack', icon: ICONS.seekBack, label: '1 秒戻す', settingKey: 'seekBackKey' },
+    { action: 'stepBack', icon: ICONS.stepBack, label: '1 コマ戻す', settingKey: 'stepBackKey' },
     { action: 'shoot', icon: ICONS.shoot, label: '撮影', settingKey: 'captureKey' },
-    { action: 'forward', icon: ICONS.forward, label: '1 コマ送る', settingKey: 'stepForwardKey' },
+    {
+      action: 'stepForward',
+      icon: ICONS.stepForward,
+      label: '1 コマ送る',
+      settingKey: 'stepForwardKey',
+    },
+    {
+      action: 'seekForward',
+      icon: ICONS.seekForward,
+      label: '1 秒送る',
+      settingKey: 'seekForwardKey',
+    },
   ];
 
   let barHandlers = null;
@@ -170,10 +189,8 @@
   function onBarClick(event) {
     const button = event.target.closest('.zss-btn');
     if (!button || !barHandlers) return;
-    const action = button.dataset.zssAction;
-    if (action === 'back') barHandlers.onStepBack();
-    else if (action === 'forward') barHandlers.onStepForward();
-    else if (action === 'shoot') barHandlers.onShoot();
+    const handler = barHandlers[button.dataset.zssAction];
+    if (handler) handler();
   }
 
   function buildBar() {

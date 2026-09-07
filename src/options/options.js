@@ -9,7 +9,13 @@
   const META_LABEL = ZSS.format.metaLabelForPlatform(
     (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform
   );
-  const HOTKEY_FIELDS = ['captureKey', 'stepForwardKey', 'stepBackKey'];
+  const HOTKEY_FIELDS = [
+    'captureKey',
+    'stepForwardKey',
+    'stepBackKey',
+    'seekForwardKey',
+    'seekBackKey',
+  ];
   // 修飾キー単独は割り当てさせない
   const MODIFIER_CODES = [
     'ShiftLeft',

@@ -1,4 +1,4 @@
-// 1 フレーム単位のコマ送り。fps は実測してから使う。
+// 一時停止中のシーク。コマ送り (実測 fps ベース) と 1 秒送りの 2 段階を用意する。
 (function () {
   'use strict';
 
@@ -9,10 +9,12 @@
   // コールバックが来ないまま固まらないよう、待ち受けには必ずタイムアウトを張る
   const MEASURE_TIMEOUT_MS = 5000;
   const FRAME_WAIT_TIMEOUT_MS = 1000;
+  // コマ送りと再生中の 10 秒送りの中間の粒度
+  const SEEK_SECONDS = 1;
 
   let fps = null;
   let measuring = false;
-  let stepping = false;
+  let seeking = false;
   let warnedFallback = false;
 
   // 再生中に数フレーム分の presentedFrames と mediaTime を取り、実 fps を求める
@@ -102,7 +104,9 @@
     });
   }
 
-  async function step(direction) {
+  // シークの本体。移動量以外の判断 (再生中は動かない・多重シークを防ぐ・
+  // 端で止める・描画を待つ) は粒度によらず同じなので、ここに一本化する。
+  async function seekBy(deltaSeconds) {
     const video = ZSS.player.getVideo();
     if (!video) {
       throw new Error('動画要素が見つかりません (z-an の DOM 構造が変わった可能性があります)');
@@ -110,21 +114,31 @@
     // 再生中は何もしない。z-an 本来の 10 秒送りに委ねる
     if (!video.paused) return false;
     // 前のシークの描画待ちが終わるまでは受け付けない (多重シークを防ぐ)
-    if (stepping) return false;
+    if (seeking) return false;
     if (!Number.isFinite(video.duration) || video.duration <= 0) {
       throw new Error('動画がまだ読み込まれていません');
     }
 
-    stepping = true;
+    seeking = true;
     try {
-      const delta = direction / getFps();
-      const target = Math.min(Math.max(video.currentTime + delta, 0), video.duration);
+      const target = Math.min(Math.max(video.currentTime + deltaSeconds, 0), video.duration);
       video.currentTime = target;
       await waitForFrame(video);
     } finally {
-      stepping = false;
+      seeking = false;
     }
     return true;
+  }
+
+  // 1 コマ送る / 戻す。粒度は実測した fps に従う。
+  function step(direction) {
+    return seekBy(direction / getFps());
+  }
+
+  // 1 秒送る / 戻す。コマ送りは目的の位置まで遠く、再生中の 10 秒送りは粗すぎるため、
+  // その中間の粒度を用意する。
+  function seek(direction) {
+    return seekBy(direction * SEEK_SECONDS);
   }
 
   // 再生が始まったタイミングで測定を試みる
@@ -134,6 +148,7 @@
 
   ZSS.stepper = {
     step,
+    seek,
     ensureFps,
     getFps,
     getMeasuredFps: () => fps,
