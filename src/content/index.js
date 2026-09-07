@@ -50,9 +50,29 @@
     );
   }
 
+  // ブラウザの自動再生ポリシーにより、ページに最初のユーザー操作が入った時点で、
+  // 保留されていた再生が解禁されて動き出す。バーのクリックもホットキーもその
+  // 「操作」に数えられるため、こちらの操作をきっかけに勝手に再生が始まる。
+  // preventDefault も stopImmediatePropagation も操作の成立自体は妨げないので、
+  // イベントを止める方向では直らない。変わってしまった状態を戻す。
+  //
+  // 監視は短時間だけ張る。長く張ると、こちらの操作の直後にユーザーが自分で
+  // 再生ボタンを押したときまで止めてしまう。
+  const PLAY_GUARD_MS = 300;
+
+  function holdPlayState() {
+    const video = ZSS.player.getVideo();
+    // 再生中の撮影は妨げない。止めるのは「止まっていたのに動き出した」場合だけ
+    if (!video || !video.paused) return;
+    const undo = () => video.pause();
+    video.addEventListener('play', undo);
+    setTimeout(() => video.removeEventListener('play', undo), PLAY_GUARD_MS);
+  }
+
   // 失敗時の扱いはどの操作も同じ (console に残してトーストで知らせる) なので
   // 1 か所にまとめる。what はトーストではなく console 向けの操作名。
   async function run(what, action) {
+    holdPlayState();
     try {
       await action();
     } catch (error) {
