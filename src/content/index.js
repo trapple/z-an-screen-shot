@@ -3,7 +3,9 @@
   'use strict';
 
   const ZSS = (globalThis.ZSS = globalThis.ZSS || {});
-  ZSS.version = '0.1.0';
+  // manifest.json を唯一の出所にする。ここに数値を直書きすると、
+  // バージョンを上げたときに片方だけ直し忘れて console が嘘をつく。
+  ZSS.version = chrome.runtime.getManifest().version;
 
   // content script は zan-live.com の全ページに注入されるが、再生ページ以外では
   // 何もしない。トップページや番組一覧でキー入力を監視する必要はなく、
