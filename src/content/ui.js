@@ -131,23 +131,13 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5v14l9.5-7z"/><path d="M12.5 5v14L22 12z"/></svg>',
   };
 
-  // action は mountButtons に渡されるハンドラのキーと対応する
+  // action は ICONS のキーであり、mountButtons に渡すハンドラのキーでもある
   const BUTTON_SPECS = [
-    { action: 'seekBack', icon: ICONS.seekBack, label: '1 秒戻す', settingKey: 'seekBackKey' },
-    { action: 'stepBack', icon: ICONS.stepBack, label: '1 コマ戻す', settingKey: 'stepBackKey' },
-    { action: 'shoot', icon: ICONS.shoot, label: '撮影', settingKey: 'captureKey' },
-    {
-      action: 'stepForward',
-      icon: ICONS.stepForward,
-      label: '1 コマ送る',
-      settingKey: 'stepForwardKey',
-    },
-    {
-      action: 'seekForward',
-      icon: ICONS.seekForward,
-      label: '1 秒送る',
-      settingKey: 'seekForwardKey',
-    },
+    { action: 'seekBack', label: '1 秒戻す', settingKey: 'seekBackKey' },
+    { action: 'stepBack', label: '1 コマ戻す', settingKey: 'stepBackKey' },
+    { action: 'shoot', label: '撮影', settingKey: 'captureKey' },
+    { action: 'stepForward', label: '1 コマ送る', settingKey: 'stepForwardKey' },
+    { action: 'seekForward', label: '1 秒送る', settingKey: 'seekForwardKey' },
   ];
 
   let barHandlers = null;
@@ -201,7 +191,7 @@
       button.type = 'button';
       button.className = 'zss-btn';
       button.dataset.zssAction = spec.action;
-      button.innerHTML = spec.icon;
+      button.innerHTML = ICONS[spec.action];
       bar.appendChild(button);
     }
     for (const type of SWALLOWED_EVENTS) {
@@ -250,7 +240,23 @@
     syncBarVisibility();
   }
 
+  // action は ICONS のキーとハンドラのキーを兼ねているため、名前がずれると
+  // アイコンが空になったり押しても無反応になったりする。どちらも silent に
+  // 壊れて気付けないので、起動時に照合して警告する (verifySelectors と同じ狙い)。
+  function verifyActions(handlers) {
+    const broken = BUTTON_SPECS.filter(
+      (spec) => !ICONS[spec.action] || typeof handlers[spec.action] !== 'function'
+    ).map((spec) => spec.action);
+    if (broken.length > 0) {
+      console.warn(
+        '[z-an Screenshot] action に対応するアイコンかハンドラがありません:',
+        broken
+      );
+    }
+  }
+
   function mountButtons(handlers, settings) {
+    verifyActions(handlers);
     barHandlers = handlers;
     injectStyles();
     attachBar(settings);

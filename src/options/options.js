@@ -9,13 +9,9 @@
   const META_LABEL = ZSS.format.metaLabelForPlatform(
     (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform
   );
-  const HOTKEY_FIELDS = [
-    'captureKey',
-    'stepForwardKey',
-    'stepBackKey',
-    'seekForwardKey',
-    'seekBackKey',
-  ];
+  // ホットキーの設定は名前が Key で終わる、という defaults.js の並びに従う。
+  // ここで再び列挙すると、ホットキーを増やしたときに直し忘れる箇所が 1 つ増える。
+  const HOTKEY_FIELDS = Object.keys(ZSS.defaults).filter((key) => key.endsWith('Key'));
   // 修飾キー単独は割り当てさせない
   const MODIFIER_CODES = [
     'ShiftLeft',

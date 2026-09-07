@@ -50,28 +50,33 @@
     );
   }
 
-  async function doCapture() {
+  // 失敗時の扱いはどの操作も同じ (console に残してトーストで知らせる) なので
+  // 1 か所にまとめる。what はトーストではなく console 向けの操作名。
+  async function run(what, action) {
     try {
-      const filename = await ZSS.capture.shoot(settings.downloadSubdir);
-      ZSS.ui.showToast(`保存しました: ${filename}`);
-    } catch (error) {
-      console.error('[z-an Screenshot] 撮影に失敗しました:', error);
-      ZSS.ui.showToast(error.message, true);
-    }
-  }
-
-  // 失敗時の扱いはコマ送りも 1 秒送りも同じなので 1 か所にまとめる
-  async function runSeek(seekFn, direction, what) {
-    try {
-      await seekFn(direction);
+      await action();
     } catch (error) {
       console.error(`[z-an Screenshot] ${what}に失敗しました:`, error);
       ZSS.ui.showToast(error.message, true);
     }
   }
 
-  const doStep = (direction) => runSeek(ZSS.stepper.step, direction, 'コマ送り');
-  const doSeek = (direction) => runSeek(ZSS.stepper.seek, direction, '1 秒送り');
+  const doCapture = () =>
+    run('撮影', async () => {
+      const filename = await ZSS.capture.shoot(settings.downloadSubdir);
+      ZSS.ui.showToast(`保存しました: ${filename}`);
+    });
+  const doStep = (direction) => run('コマ送り', () => ZSS.stepper.step(direction));
+  const doSeek = (direction) => run('1 秒送り', () => ZSS.stepper.seek(direction));
+
+  // ホットキーの設定名 → 実行する操作。settings は設定変更のたびに差し替わるので、
+  // ホットキーの値ではなく設定名を持ち、照合時に引く。
+  const SEEK_BINDINGS = [
+    ['stepForwardKey', doStep, 1],
+    ['stepBackKey', doStep, -1],
+    ['seekForwardKey', doSeek, 1],
+    ['seekBackKey', doSeek, -1],
+  ];
 
   // capture フェーズで受け取り、z-an 側のハンドラより先に判定する
   function onKeyDown(event) {
@@ -87,17 +92,11 @@
     // シーク系は一時停止中のみ。再生中は z-an 本来の 10 秒送りを妨げない
     if (!ZSS.player.isPaused()) return;
 
-    const seeks = [
-      [settings.stepForwardKey, doStep, 1],
-      [settings.stepBackKey, doStep, -1],
-      [settings.seekForwardKey, doSeek, 1],
-      [settings.seekBackKey, doSeek, -1],
-    ];
-    for (const [hotkey, run, direction] of seeks) {
-      if (!ZSS.format.matchesHotkey(event, hotkey)) continue;
+    for (const [settingKey, move, direction] of SEEK_BINDINGS) {
+      if (!ZSS.format.matchesHotkey(event, settings[settingKey])) continue;
       event.preventDefault();
       event.stopPropagation();
-      run(direction);
+      move(direction);
       return;
     }
   }
