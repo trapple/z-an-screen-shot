@@ -172,9 +172,13 @@ DOM 操作・キー入力・ダウンロードは自動テストの費用対効�
 - **ボタンバーは `#player-con` 直下に置き、`z-index: 1000000` を与えている。**
   `.cover-controls` の中に入れると、`.boxLayer` (z-index 999999) の下に隠れて
   クリックが届かず、かつ `.cover-controls` 自身のクリックで再生が再開してしまう
-- **ポインタ系イベントは capture フェーズで `stopImmediatePropagation` まで行う。**
-  z-an は `pointerdown` 段階で再生/停止を処理するため、`click` だけを止めても
-  間に合わない
+- **ポインタ系イベントは `document` の capture フェーズで `stopImmediatePropagation`
+  まで行う。** z-an は `pointerdown` 段階で再生/停止を処理するため、`click` だけを
+  止めても間に合わない。さらに、握り潰しをバー要素自身に付けると足りない。capture は
+  祖先から降りてくるので、z-an が祖先要素の capture に持つハンドラの方が先に走る。
+  実際、初回再生前だけ「クリックで再生開始」が祖先で処理されており、バーのボタンを
+  押しただけで再生が始まっていた (一度再生するとそのハンドラが外れるため、2 回目以降は
+  再現しない)
 - content script は **isolated world** で動くため、DevTools の Console から
   `ZSS` を直接叩くと `ReferenceError` になる。Console 上部の実行コンテキストを
   `z-an Screenshot` に切り替える必要がある
