@@ -101,13 +101,23 @@
     return code;
   }
 
-  function formatHotkey(hotkey) {
+  // meta キーの呼び名は OS で違う (mac: Cmd / Windows: Win)。
+  // 判定できない OS では W3C のキー名をそのまま出す。誤った OS 名を出すより無難。
+  // navigator を読むのは呼び出し側の責務。このモジュールは純粋関数だけを持つ。
+  function metaLabelForPlatform(platform) {
+    const name = String(platform == null ? '' : platform);
+    if (/mac/i.test(name)) return 'Cmd';
+    if (/^win/i.test(name)) return 'Win';
+    return 'Meta';
+  }
+
+  function formatHotkey(hotkey, metaLabel) {
     if (!hotkey || !hotkey.code) return '';
     const parts = [];
     if (hotkey.ctrl) parts.push('Ctrl');
     if (hotkey.alt) parts.push('Alt');
     if (hotkey.shift) parts.push('Shift');
-    if (hotkey.meta) parts.push('Cmd');
+    if (hotkey.meta) parts.push(metaLabel || 'Meta');
     parts.push(keyLabel(hotkey.code));
     return parts.join('+');
   }
@@ -129,6 +139,7 @@
     snapFps,
     matchesHotkey,
     formatHotkey,
+    metaLabelForPlatform,
     hotkeyFromEvent,
   };
 });

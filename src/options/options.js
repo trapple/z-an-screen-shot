@@ -4,6 +4,11 @@
   'use strict';
 
   const ZSS = globalThis.ZSS;
+  // OS の判定はここで一度だけ行う。format.js は純粋関数だけを持つ約束なので、
+  // navigator を読むのはブラウザでしか動かない側の責務。
+  const META_LABEL = ZSS.format.metaLabelForPlatform(
+    (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform
+  );
   const HOTKEY_FIELDS = ['captureKey', 'stepForwardKey', 'stepBackKey'];
   // 修飾キー単独は割り当てさせない
   const MODIFIER_CODES = [
@@ -27,7 +32,7 @@
 
   function render() {
     for (const key of HOTKEY_FIELDS) {
-      document.getElementById(key).value = ZSS.format.formatHotkey(settings[key]);
+      document.getElementById(key).value = ZSS.format.formatHotkey(settings[key], META_LABEL);
     }
     document.getElementById('downloadSubdir').value = settings.downloadSubdir;
     document.getElementById('showButtons').checked = Boolean(settings.showButtons);
