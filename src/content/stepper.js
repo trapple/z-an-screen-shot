@@ -1,4 +1,4 @@
-// 一時停止中のシーク。コマ送り (実測 fps ベース) と 1 秒送りの 2 段階を用意する。
+// 一時停止中のシーク。コマ送りと 1 秒送りの 2 段階を提供する。
 (function () {
   'use strict';
 
@@ -9,7 +9,6 @@
   // コールバックが来ないまま固まらないよう、待ち受けには必ずタイムアウトを張る
   const MEASURE_TIMEOUT_MS = 5000;
   const FRAME_WAIT_TIMEOUT_MS = 1000;
-  // コマ送りと再生中の 10 秒送りの中間の粒度
   const SEEK_SECONDS = 1;
 
   let fps = null;
@@ -104,9 +103,10 @@
     });
   }
 
-  // シークの本体。移動量以外の判断 (再生中は動かない・多重シークを防ぐ・
+  // 移動の本体。移動量以外の判断 (再生中は動かない・多重シークを防ぐ・
   // 端で止める・描画を待つ) は粒度によらず同じなので、ここに一本化する。
-  async function seekBy(deltaSeconds) {
+  // 名前を seek 系から外しているのは、公開する step / seek と紛れないため。
+  async function moveBy(deltaSeconds) {
     const video = ZSS.player.getVideo();
     if (!video) {
       throw new Error('動画要素が見つかりません (z-an の DOM 構造が変わった可能性があります)');
@@ -132,13 +132,13 @@
 
   // 1 コマ送る / 戻す。粒度は実測した fps に従う。
   function step(direction) {
-    return seekBy(direction / getFps());
+    return moveBy(direction / getFps());
   }
 
-  // 1 秒送る / 戻す。コマ送りは目的の位置まで遠く、再生中の 10 秒送りは粗すぎるため、
-  // その中間の粒度を用意する。
+  // 1 秒送る / 戻す。コマ送りは目的の位置まで遠く、再生中の 10 秒送り (z-an 本体) は
+  // 粗すぎるため、その中間の粒度として用意している。
   function seek(direction) {
-    return seekBy(direction * SEEK_SECONDS);
+    return moveBy(direction * SEEK_SECONDS);
   }
 
   // 再生が始まったタイミングで測定を試みる
