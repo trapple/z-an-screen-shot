@@ -99,6 +99,27 @@ test('formatHotkey: 表示用の文字列を組み立てる', () => {
   assert.equal(format.formatHotkey(null), '');
 });
 
+test('formatHotkey: meta キーの呼び名は呼び出し側が渡す', () => {
+  assert.equal(format.formatHotkey({ code: 'KeyS', meta: true }, 'Win'), 'Win+S');
+  // 修飾キーの並び順は metaLabel を渡しても変わらない
+  assert.equal(format.formatHotkey({ code: 'KeyS', ctrl: true, meta: true }, 'Cmd'), 'Ctrl+Cmd+S');
+  // 渡されなければ W3C のキー名を使う
+  assert.equal(format.formatHotkey({ code: 'KeyS', meta: true }), 'Meta+S');
+});
+
+test('metaLabelForPlatform: OS ごとに meta キーの呼び名を返す', () => {
+  for (const platform of ['MacIntel', 'macOS']) {
+    assert.equal(format.metaLabelForPlatform(platform), 'Cmd', platform);
+  }
+  for (const platform of ['Win32', 'Windows']) {
+    assert.equal(format.metaLabelForPlatform(platform), 'Win', platform);
+  }
+  // 判定できないときは W3C のキー名にフォールバックする
+  for (const platform of ['Linux x86_64', '', null, undefined]) {
+    assert.equal(format.metaLabelForPlatform(platform), 'Meta', String(platform));
+  }
+});
+
 test('hotkeyFromEvent: KeyboardEvent から保存形式に変換する', () => {
   assert.deepEqual(
     format.hotkeyFromEvent({ code: 'KeyS', shiftKey: true, ctrlKey: false, altKey: false, metaKey: false }),

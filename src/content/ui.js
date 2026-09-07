@@ -5,6 +5,12 @@
 
   const ZSS = (globalThis.ZSS = globalThis.ZSS || {});
 
+  // OS の判定はここで一度だけ行う。format.js は純粋関数だけを持つ約束なので、
+  // navigator を読むのはブラウザでしか動かない側の責務。
+  const META_LABEL = ZSS.format.metaLabelForPlatform(
+    (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform
+  );
+
   const STYLE_ID = 'zss-style';
   const TOAST_DURATION_MS = 2000;
 
@@ -22,7 +28,9 @@
   color: #fff;
   font-size: 13px;
   line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+  /* mac 系のフォントだけを並べると Windows で全て外れて素の sans-serif に落ちるため、
+     両 OS の UI フォントと日本語フォントを順に並べる */
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -200,7 +208,7 @@
       for (const spec of BUTTON_SPECS) {
         const button = bar.querySelector(`[data-zss-action="${spec.action}"]`);
         if (!button) continue;
-        const hotkey = ZSS.format.formatHotkey(current[spec.settingKey]);
+        const hotkey = ZSS.format.formatHotkey(current[spec.settingKey], META_LABEL);
         const text = hotkey ? `${spec.label} (${hotkey})` : spec.label;
         button.title = text;
         button.setAttribute('aria-label', text);
