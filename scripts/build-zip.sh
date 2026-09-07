@@ -14,10 +14,12 @@ OUT="${OUT_DIR}/z-an-screenshot-${VERSION}.zip"
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
+# LICENSE は MIT がライセンス文の同梱を求めているため配布物に含める
 zip -r -q "$OUT" \
   manifest.json \
   src \
   README.md \
+  LICENSE \
   -x '*.DS_Store'
 
 echo "$OUT"

@@ -168,3 +168,7 @@ DOM 操作・キー入力・ダウンロードは自動テストの費用対効�
 - 再生ページでは `JSON.parse` が 16382 バイト目で失敗する `SyntaxError` が
   Console に出るが、これは z-an 側の問題であり本拡張とは無関係。動画の再生にも
   影響しない
+
+## ライセンス
+
+MIT License. 詳細は [LICENSE](LICENSE) を参照。
